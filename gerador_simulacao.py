@@ -5,10 +5,10 @@ import json
 
 ARQUIVO = "dados_simulados.py.csv"
 
-# 15 números seriais
+
 NUM_SERIAIS = [f"{i:04d}" for i in range(1, 16)]
 
-# 🎯 Setor fixo por número serial
+
 SETOR_POR_SERIAL = {
     "0001": "Fabricação de Componentes",
     "0002": "Fabricação de Componentes",
@@ -30,49 +30,56 @@ SETOR_POR_SERIAL = {
     "0015": "Montagem final",
 }
 
-# Valores iniciais do disco para cada serial (20% a 40%)
+NOME_PROCESSOS = [
+"modbus",
+"PROFINET",
+"robot_controller",
+"inverse_kinematics",
+"path_follower",
+"gripper_control",
+"lidar_scan",
+"camera_stream",
+"force_sensor",
+"user_input",
+"task_scheduler",
+]
+
 disco_usado_atual = {serial: random.uniform(20, 40) for serial in NUM_SERIAIS}
 
-# Contador global de dias simulados
+
 dias_passados = 0
 
 
-# ---------------------- FUNÇÃO DISCO GRADUAL ----------------------
 def atualizar_disco(serial, dias_passados):
     """Atualiza lentamente o uso de disco com comportamento realista."""
 
     valor = disco_usado_atual[serial]
 
-    # 1) Aumento diário leve
-    valor += random.uniform(0.02, 0.15)
 
-    # 2) A cada 14 dias → acúmulo maior
+    valor += random.uniform(0.3, 0.5)
+
     if dias_passados % 14 == 0 and dias_passados != 0:
-        valor += random.uniform(0.8, 2.5)
+        valor += random.uniform(5.0, 10.5)
 
-    # 3) A cada 60 dias → limpeza (queda)
-    if dias_passados % 60 == 0 and dias_passados != 0:
-        valor -= random.uniform(1.5, 5.0)
+    if valor > 95:
+        valor -= random.uniform(50.5, 70.0)
 
-    # Mantém em limites realistas
     valor = max(5.0, min(95.0, valor))
 
-    # Atualiza o valor armazenado
     disco_usado_atual[serial] = valor
     return round(valor, 2)
 
 
-# ---------------------- TOPO DO CSV ----------------------
+
 with open(ARQUIVO, "w", newline="") as f:
     writer = csv.writer(f, delimiter=";")
     writer.writerow([
-        "timestamp", "numSerial", "setor", "cpu", "ramTotal",
+        "timestamp","empresa" "setor", "numSerial", "cpu", "ramTotal",
         "ramUsada", "discoTotal", "discoUsado",
         "numProcessos", "top5Processos"
     ])
 
 
-# ---------------------- CONFIGURAÇÃO DE DATAS ----------------------
 ano_atual = datetime.now().year
 
 inicio_geral = datetime(ano_atual, 1, 1, 0, 0)
@@ -82,24 +89,21 @@ inicio_dia2 = datetime(ano_atual, 12, 2, 0, 0)
 fim_dia2 = datetime(ano_atual, 12, 2, 23, 59)
 
 
-# ---------------------- FUNÇÃO TOP 5 PROCESSOS ----------------------
 def gerar_top5():
     lista = []
     for i in range(5):
         lista.append({
             "pid": random.randint(100, 9999),
-            "name": f"processo{i+1}",
+            "name": random.choice(NOME_PROCESSOS),
             "cpu_percent": round(random.uniform(0, 40), 2),
             "memory_rss": random.randint(50_000_000, 500_000_000)
         })
     return lista
 
 
-# ---------------------- GERAR CSV ----------------------
 with open(ARQUIVO, "a", newline="") as f:
     writer = csv.writer(f, delimiter=";")
 
-    # ---------------------- PARTE 1: 1 captura por HORA ----------------------
     tempo = inicio_geral
     incremento_horas = timedelta(hours=1)
 
@@ -108,20 +112,21 @@ with open(ARQUIVO, "a", newline="") as f:
 
     while tempo <= fim_geral:
 
-        # Detecta mudança de dia
+  
         if tempo.day != ultimo_dia:
             dias_passados += 1
             ultimo_dia = tempo.day
 
         for serial in NUM_SERIAIS:
 
-            setor = SETOR_POR_SERIAL[serial]  # ← setor fixo por serial
+            setor = SETOR_POR_SERIAL[serial]  
             cpu = round(random.uniform(1, 95), 2)
             ram_total = 8 * (1024 ** 3)
             ram_usada = round(random.uniform(20, 95), 2)
             disco_total = 250 * (1024 ** 3)
+            empresa = "Porsche"
 
-            # DISCO REALISTA
+  
             disco_usado = atualizar_disco(serial, dias_passados)
 
             num_processos = random.randint(50, 300)
@@ -129,8 +134,9 @@ with open(ARQUIVO, "a", newline="") as f:
 
             writer.writerow([
                 tempo.strftime("%Y-%m-%d %H:%M:%S"),
-                serial,
+                empresa,
                 setor,
+                serial,
                 cpu,
                 ram_total,
                 ram_usada,
@@ -142,7 +148,6 @@ with open(ARQUIVO, "a", newline="") as f:
 
         tempo += incremento_horas
 
-    # ---------------------- PARTE 2: 1 captura por MINUTO no dia 02/12 ----------------------
     tempo = inicio_dia2
     incremento_minutos = timedelta(minutes=1)
 
@@ -150,11 +155,12 @@ with open(ARQUIVO, "a", newline="") as f:
 
         for serial in NUM_SERIAIS:
 
-            setor = SETOR_POR_SERIAL[serial]  # ← setor fixo
+            setor = SETOR_POR_SERIAL[serial] 
             cpu = round(random.uniform(1, 95), 2)
             ram_total = 8 * (1024 ** 3)
             ram_usada = round(random.uniform(20, 95), 2)
             disco_total = 250 * (1024 ** 3)
+            empresa = "Porsche"
 
             disco_usado = atualizar_disco(serial, dias_passados)
 
@@ -163,8 +169,9 @@ with open(ARQUIVO, "a", newline="") as f:
 
             writer.writerow([
                 tempo.strftime("%Y-%m-%d %H:%M:%S"),
-                serial,
+                empresa,
                 setor,
+                serial,
                 cpu,
                 ram_total,
                 ram_usada,
